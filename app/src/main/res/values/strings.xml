@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">My AI Robot</string>
+    <string name="accessibility_service_description">Enables My AI Robot to assist with authorized app interactions, web navigation, form assistance, and user-approved actions.</string>
+</resources>
