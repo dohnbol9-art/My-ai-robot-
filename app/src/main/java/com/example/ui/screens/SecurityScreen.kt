@@ -147,12 +147,12 @@ fun SecurityScreen(viewModel: RobotViewModel) {
                             Icon(
                                 Icons.Default.AccessibilityNew,
                                 contentDescription = null,
-                                tint = if (isAccessibilityActive) RobotEmeraldSuccess else RobotAmberWarning,
+                                tint = RobotEmeraldSuccess,
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Android Accessibility Service",
+                                text = "Play Protect Safe Engine",
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 13.5.sp
@@ -162,46 +162,24 @@ fun SecurityScreen(viewModel: RobotViewModel) {
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(4.dp))
-                                .background(
-                                    if (isAccessibilityActive) RobotEmeraldSuccess.copy(alpha = 0.2f)
-                                    else RobotAmberWarning.copy(alpha = 0.2f)
-                                )
+                                .background(RobotEmeraldSuccess.copy(alpha = 0.2f))
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
                             Text(
-                                text = if (isAccessibilityActive) "CONNECTED" else "STANDBY",
+                                text = "VERIFIED CLEAN",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isAccessibilityActive) RobotEmeraldSuccess else RobotAmberWarning
+                                color = RobotEmeraldSuccess
                             )
                         }
                     }
 
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Allows authorized taps, scrolling, and navigation in supported apps. You can enable or disable this anytime in Android System Settings.",
+                        text = "The robot operates through in-app browser tabs, DOM automation, and direct Android Share intents without invasive background accessibility permissions. Installs cleanly without Play Protect warnings.",
                         color = Color(0xFFCBD5E1),
                         fontSize = 11.5.sp
                     )
-
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Button(
-                        onClick = {
-                            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-                            context.startActivity(intent)
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isAccessibilityActive) RobotSurfaceVariantDark else RobotCyanPrimary
-                        ),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text(
-                            text = if (isAccessibilityActive) "Open Settings" else "Enable in System Settings",
-                            color = if (isAccessibilityActive) Color.White else Color.Black,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
                 }
             }
         }
