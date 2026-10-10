@@ -7,6 +7,7 @@ import com.example.affiliate.AffiliateEngine
 import com.example.ai.GeminiClient
 import com.example.automation.BrowserAutomationEngine
 import com.example.automation.MyRobotAccessibilityService
+import com.example.automation.HumanRobotAutomationEngine
 import com.example.creative.CreativeEngine
 import com.example.data.AppDatabase
 import com.example.data.PinDraftEntity
@@ -44,6 +45,7 @@ class RobotViewModel(application: Application) : AndroidViewModel(application) {
     val creativeEngine = CreativeEngine(application)
     val pinterestManager = PinterestManager(database.pinDraftDao(), securityManager)
     val browserEngine = BrowserAutomationEngine(application, securityManager)
+    val humanRobotEngine = HumanRobotAutomationEngine(application, securityManager, affiliateEngine, creativeEngine, database)
 
     val workflowEngine = WorkflowEngine(
         context = application,
@@ -109,8 +111,21 @@ class RobotViewModel(application: Application) : AndroidViewModel(application) {
         )
         _chatMessages.value = _chatMessages.value + userMsg
 
-        // Check if user is invoking the kitchen gadgets workflow
+        // Check if user is invoking human robot mode
         val lower = text.lowercase()
+        if (lower.contains("human") || lower.contains("real") || lower.contains("live") || lower.contains("browser") || lower.contains("portal")) {
+            val robotAck = ChatMessage(
+                id = "robot_human_${System.currentTimeMillis()}",
+                sender = "ROBOT",
+                text = "Starting Live Human Robot Mode! Watch me switch tabs on your screen: AliExpress -> Portals Link Generator -> Gemini AI -> Pinterest Pin Builder. Switch to the 'Live Robot' tab at the bottom to watch the live virtual cursor and browser!",
+                thinkingThoughts = "🧠 [gemini-3.1-pro-preview (HIGH THINKING)]\nInitiating Live Human Working Phone Simulation. Target: AliExpress trending gadget -> Portals Link Generator -> Country Targeting -> Gemini 1000x1500 creative -> Pinterest Pin Builder."
+            )
+            _chatMessages.value = _chatMessages.value + robotAck
+            humanRobotEngine.startHumanWorkflow()
+            return
+        }
+
+        // Check if user is invoking the kitchen gadgets workflow
         if (lower.contains("kitchen") && (lower.contains("find") || lower.contains("publish") || lower.contains("temu") || lower.contains("aliexpress"))) {
             executeKitchenGadgetsWorkflow(text)
             return

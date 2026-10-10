@@ -55,6 +55,10 @@ import com.example.ui.theme.RobotCyanPrimary
 import com.example.ui.theme.RobotSurfaceDark
 import com.example.workflow.WorkflowState
 
+import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material.icons.outlined.TouchApp
+import com.example.ui.screens.LiveHumanRobotScreen
+
 enum class RobotScreen(
     val title: String,
     val selectedIcon: ImageVector,
@@ -62,9 +66,9 @@ enum class RobotScreen(
     val tag: String
 ) {
     ASSISTANT("Assistant", Icons.Filled.SmartToy, Icons.Outlined.SmartToy, "nav_assistant"),
+    LIVE_ROBOT("Live Robot", Icons.Filled.TouchApp, Icons.Outlined.TouchApp, "nav_live_robot"),
     DASHBOARD("Control", Icons.Filled.Dashboard, Icons.Outlined.Dashboard, "nav_dashboard"),
-    BROWSER("Browser", Icons.Filled.Language, Icons.Outlined.Language, "nav_browser"),
-    MARKETING("Affiliate", Icons.Filled.Campaign, Icons.Outlined.Campaign, "nav_marketing"),
+    MARKETING("Pins & Links", Icons.Filled.Campaign, Icons.Outlined.Campaign, "nav_marketing"),
     SECURITY("Security", Icons.Filled.Security, Icons.Outlined.Security, "nav_security")
 }
 
@@ -152,8 +156,8 @@ fun MainAppScaffold(viewModel: RobotViewModel) {
         ) {
             when (currentScreen) {
                 RobotScreen.ASSISTANT -> AssistantScreen(viewModel = viewModel)
+                RobotScreen.LIVE_ROBOT -> LiveHumanRobotScreen(viewModel = viewModel)
                 RobotScreen.DASHBOARD -> DashboardScreen(viewModel = viewModel)
-                RobotScreen.BROWSER -> BrowserScreen(viewModel = viewModel)
                 RobotScreen.MARKETING -> MarketingScreen(viewModel = viewModel)
                 RobotScreen.SECURITY -> SecurityScreen(viewModel = viewModel)
             }

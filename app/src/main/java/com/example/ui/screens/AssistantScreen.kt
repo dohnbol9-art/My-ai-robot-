@@ -167,8 +167,17 @@ fun AssistantScreen(viewModel: RobotViewModel) {
         ) {
             item {
                 SuggestionChip(
-                    text = "🔥 Run 10 Kitchen Gadgets Workflow",
+                    text = "🤖 Run Live Human Robot Workflow",
                     isPrimary = true,
+                    onClick = {
+                        viewModel.humanRobotEngine.startHumanWorkflow()
+                    }
+                )
+            }
+            item {
+                SuggestionChip(
+                    text = "🔥 10 Gadgets Batch Automation",
+                    isPrimary = false,
                     onClick = {
                         viewModel.executeKitchenGadgetsWorkflow()
                     }
