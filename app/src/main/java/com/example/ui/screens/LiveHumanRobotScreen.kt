@@ -115,6 +115,7 @@ fun LiveHumanRobotScreen(viewModel: RobotViewModel) {
     val logs by humanEngine.executionLogs.collectAsState()
     val currentProduct by humanEngine.currentProduct.collectAsState()
     val currentPinDraft by humanEngine.currentPinDraft.collectAsState()
+    val isAutopilotActive by humanEngine.isAutopilotActive.collectAsState()
 
     var webViewInstance by remember { mutableStateOf<WebView?>(null) }
     var showLogsDrawer by remember { mutableStateOf(false) }
@@ -310,26 +311,40 @@ fun LiveHumanRobotScreen(viewModel: RobotViewModel) {
                             onClick = { humanEngine.startHumanWorkflow() },
                             colors = ButtonDefaults.buttonColors(containerColor = RobotCyanPrimary),
                             shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
                             modifier = Modifier
                                 .weight(1f)
                                 .testTag("start_human_robot_button")
                         ) {
-                            Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.Black, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Run Live Human Automation", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.Black, modifier = Modifier.size(15.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text("Run Live", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 11.5.sp)
+                        }
+
+                        Button(
+                            onClick = { humanEngine.startAutopilot(count = 3) },
+                            colors = ButtonDefaults.buttonColors(containerColor = RobotEmeraldSuccess),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                            modifier = Modifier
+                                .weight(1.2f)
+                                .testTag("start_autopilot_button")
+                        ) {
+                            Icon(Icons.Default.Bolt, contentDescription = null, tint = Color.Black, modifier = Modifier.size(15.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text("Autopilot 3x", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 11.5.sp)
                         }
                     } else {
                         Button(
                             onClick = { humanEngine.stop() },
                             colors = ButtonDefaults.buttonColors(containerColor = RobotRoseError),
                             shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                             modifier = Modifier.weight(1f)
                         ) {
-                            Icon(Icons.Default.Stop, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Stop, contentDescription = null, tint = Color.White, modifier = Modifier.size(15.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Stop Robot", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text("Stop Robot", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.5.sp)
                         }
                     }
 
@@ -340,7 +355,7 @@ fun LiveHumanRobotScreen(viewModel: RobotViewModel) {
                         shape = RoundedCornerShape(8.dp),
                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
                     ) {
-                        Text("📌 Share to Pinterest", color = Color(0xFFFB7185), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                        Text("📌 Pinterest", color = Color(0xFFFB7185), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                     }
 
                     // Native Chrome browser launcher

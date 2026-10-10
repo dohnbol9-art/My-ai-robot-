@@ -51,6 +51,12 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.Manifest
+import android.app.Activity
+import android.content.Intent
+import android.speech.RecognizerIntent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import com.example.ui.ChatMessage
 import com.example.ui.RobotViewModel
 import com.example.ui.components.ThinkingProcessCard
@@ -70,6 +76,42 @@ fun AssistantScreen(viewModel: RobotViewModel) {
 
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
+
+    // Real Android Speech Recognizer Result Launcher
+    val speechRecognizerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val spokenText = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
+            if (!spokenText.isNullOrBlank()) {
+                inputText = spokenText
+                viewModel.sendUserMessage(spokenText)
+            }
+        }
+    }
+
+    // Microphone Permission Launcher
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak command to My AI Robot...")
+            }
+            try {
+                speechRecognizerLauncher.launch(intent)
+            } catch (e: Exception) {
+                val fallback = "Start live human robot automation"
+                inputText = fallback
+                viewModel.sendUserMessage(fallback)
+            }
+        } else {
+            val fallback = "Start live human robot automation"
+            inputText = fallback
+            viewModel.sendUserMessage(fallback)
+        }
+    }
 
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
@@ -167,10 +209,28 @@ fun AssistantScreen(viewModel: RobotViewModel) {
         ) {
             item {
                 SuggestionChip(
-                    text = "🤖 Run Live Human Robot Workflow",
+                    text = "🤖 Hands-Free Autopilot (No Typing)",
                     isPrimary = true,
                     onClick = {
-                        viewModel.humanRobotEngine.startHumanWorkflow()
+                        viewModel.humanRobotEngine.startAutopilot(count = 3)
+                    }
+                )
+            }
+            item {
+                SuggestionChip(
+                    text = "🎙️ Voice: AliExpress -> Portals -> Pinterest",
+                    isPrimary = true,
+                    onClick = {
+                        viewModel.sendUserMessage("Find trending AliExpress gadget, generate affiliate link in portal with target country, create Gemini 1000x1500 pin and post to Pinterest")
+                    }
+                )
+            }
+            item {
+                SuggestionChip(
+                    text = "🌐 Open All Sites in Chrome",
+                    isPrimary = false,
+                    onClick = {
+                        viewModel.humanRobotEngine.openInChrome("https://www.aliexpress.com")
                     }
                 )
             }
@@ -185,19 +245,10 @@ fun AssistantScreen(viewModel: RobotViewModel) {
             }
             item {
                 SuggestionChip(
-                    text = "🔍 Research Viral Temu Home Finds",
+                    text = "🔍 Temu Affiliate Top Finds",
                     isPrimary = false,
                     onClick = {
-                        inputText = "Research top viral home finds on Temu with commission rate above 15%."
-                    }
-                )
-            }
-            item {
-                SuggestionChip(
-                    text = "📌 Check Pinterest Board Status",
-                    isPrimary = false,
-                    onClick = {
-                        inputText = "Show status of Kitchen Gadgets board and today's publishing quota."
+                        viewModel.sendUserMessage("Research top viral Temu finds with high commission and create Pinterest pins")
                     }
                 )
             }
@@ -214,20 +265,21 @@ fun AssistantScreen(viewModel: RobotViewModel) {
                     .padding(horizontal = 10.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Voice Command Mic button
+                // Voice Command Mic button - Listens to speech hands-free!
                 IconButton(
                     onClick = {
-                        inputText = "Find 10 kitchen gadgets on Temu and AliExpress, generate their affiliate links, create Pinterest images and SEO descriptions, and publish them to my kitchen gadgets board."
+                        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                     },
                     modifier = Modifier
                         .size(44.dp)
                         .clip(CircleShape)
-                        .background(RobotSurfaceVariantDark)
+                        .background(RobotCyanPrimary.copy(alpha = 0.2f))
+                        .border(1.dp, RobotCyanPrimary, CircleShape)
                         .testTag("voice_command_button")
                 ) {
                     Icon(
                         imageVector = Icons.Default.Mic,
-                        contentDescription = "Voice Input",
+                        contentDescription = "Voice Input - Speak your command",
                         tint = RobotCyanPrimary
                     )
                 }

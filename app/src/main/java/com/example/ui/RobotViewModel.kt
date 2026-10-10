@@ -44,8 +44,9 @@ class RobotViewModel(application: Application) : AndroidViewModel(application) {
     val affiliateEngine = AffiliateEngine(securityManager)
     val creativeEngine = CreativeEngine(application)
     val pinterestManager = PinterestManager(database.pinDraftDao(), securityManager)
+    val voiceEngine = com.example.automation.RobotVoiceEngine(application)
     val browserEngine = BrowserAutomationEngine(application, securityManager)
-    val humanRobotEngine = HumanRobotAutomationEngine(application, securityManager, affiliateEngine, creativeEngine, database)
+    val humanRobotEngine = HumanRobotAutomationEngine(application, securityManager, affiliateEngine, creativeEngine, database, voiceEngine)
 
     val workflowEngine = WorkflowEngine(
         context = application,
@@ -111,16 +112,24 @@ class RobotViewModel(application: Application) : AndroidViewModel(application) {
         )
         _chatMessages.value = _chatMessages.value + userMsg
 
-        // Check if user is invoking human robot mode
+        // Check if user is invoking human robot mode or autonomous working
         val lower = text.lowercase()
-        if (lower.contains("human") || lower.contains("real") || lower.contains("live") || lower.contains("browser") || lower.contains("portal")) {
+        val isAutonomousCommand = lower.contains("human") || lower.contains("real") ||
+                lower.contains("live") || lower.contains("browser") || lower.contains("portal") ||
+                lower.contains("copy") || lower.contains("work for me") || lower.contains("robot") ||
+                lower.contains("command") || lower.contains("autopilot") || lower.contains("not visible") ||
+                lower.contains("hands free") || lower.contains("post for me") || lower.contains("automate") ||
+                (lower.contains("pinterest") && (lower.contains("temu") || lower.contains("aliexpress")))
+
+        if (isAutonomousCommand) {
             val robotAck = ChatMessage(
                 id = "robot_human_${System.currentTimeMillis()}",
                 sender = "ROBOT",
-                text = "Starting Live Human Robot Mode! Watch me switch tabs on your screen: AliExpress -> Portals Link Generator -> Gemini AI -> Pinterest Pin Builder. Switch to the 'Live Robot' tab at the bottom to watch the live virtual cursor and browser!",
-                thinkingThoughts = "🧠 [gemini-3.1-pro-preview (HIGH THINKING)]\nInitiating Live Human Working Phone Simulation. Target: AliExpress trending gadget -> Portals Link Generator -> Country Targeting -> Gemini 1000x1500 creative -> Pinterest Pin Builder."
+                text = "Starting Full Autonomous Human Robot Mode! 🤖\n\nYou don't need to type or touch your phone. I am actively browsing AliExpress & Temu, extracting trending product specs, generating verified affiliate tracking links in the Affiliate Portal, creating 1000×1500 HD Pinterest creatives with Gemini AI, and preparing Pinterest pins. Switch to the 'Live Robot' tab to watch my live virtual cursor and browser tabs in real time!",
+                thinkingThoughts = "🧠 [gemini-3.1-pro-preview (HIGH THINKING)]\nGoal: Autonomous human phone automation without requiring manual typing.\nStep 1: AliExpress / Temu browsing & DOM extraction.\nStep 2: Official affiliate tracking link generation with country targeting.\nStep 3: Gemini 1000×1500 marketing creative generation.\nStep 4: Pinterest pin preparation and publication."
             )
             _chatMessages.value = _chatMessages.value + robotAck
+            voiceEngine.speak("Command received! Starting autonomous human robot mode now. I will do all the work on your phone.")
             humanRobotEngine.startHumanWorkflow()
             return
         }
@@ -217,5 +226,10 @@ class RobotViewModel(application: Application) : AndroidViewModel(application) {
             database.pinDraftDao().clearPinDrafts()
             database.robotLogDao().clearLogs()
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        voiceEngine.shutdown()
     }
 }

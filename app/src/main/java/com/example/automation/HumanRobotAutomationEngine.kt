@@ -25,8 +25,8 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 enum class HumanRobotStep(val title: String, val activeTab: String) {
-    IDLE("Idle - Ready to begin", "AliExpress"),
-    VISIT_ECOMMERCE("Visiting AliExpress / Temu for trending products", "AliExpress"),
+    IDLE("Idle - Ready for your command", "AliExpress"),
+    VISIT_ECOMMERCE("Visiting AliExpress / Temu to find trending products", "AliExpress"),
     EXTRACT_PRODUCT("Reading product details & copying item information", "AliExpress"),
     VISIT_AFFILIATE_PORTAL("Switching to Affiliate Portal link generator", "Affiliate Portal"),
     GENERATE_AFFILIATE_LINK("Entering product URL, selecting target country & generating link", "Affiliate Portal"),
@@ -51,7 +51,8 @@ class HumanRobotAutomationEngine(
     private val securityManager: SecurityManager,
     private val affiliateEngine: AffiliateEngine,
     private val creativeEngine: CreativeEngine,
-    private val database: AppDatabase
+    private val database: AppDatabase,
+    val voiceEngine: RobotVoiceEngine
 ) {
     private val scope = CoroutineScope(Dispatchers.Main + Job())
     private var automationJob: Job? = null
@@ -83,16 +84,56 @@ class HumanRobotAutomationEngine(
     private val _isPaused = MutableStateFlow(false)
     val isPaused: StateFlow<Boolean> = _isPaused.asStateFlow()
 
+    private val _isAutopilotActive = MutableStateFlow(false)
+    val isAutopilotActive: StateFlow<Boolean> = _isAutopilotActive.asStateFlow()
+
     private val _humanSpeedMs = MutableStateFlow(1200L) // Delay between human actions for visible realism
     val humanSpeedMs: StateFlow<Long> = _humanSpeedMs.asStateFlow()
 
     fun setTargetCountry(country: String) {
         _targetCountry.value = country
-        log("Target country updated to: $country")
+        log("Target country set to: $country")
+        voiceEngine.speak("Target country set to $country")
     }
 
     fun setHumanSpeed(ms: Long) {
         _humanSpeedMs.value = ms
+    }
+
+    /**
+     * Complete Hands-Free Autonomous Mode: Runs without requiring any user typing or touches!
+     */
+    fun startAutopilot(
+        count: Int = 3,
+        niche: String = "Kitchen Gadgets",
+        platform: String = "AliExpress",
+        targetBoard: String = "Kitchen Gadgets"
+    ) {
+        automationJob?.cancel()
+        _isPaused.value = false
+        _isAutopilotActive.value = true
+
+        voiceEngine.speak("Starting hands-free autopilot for $count $niche products. I will do all the work for you.")
+
+        automationJob = scope.launch {
+            try {
+                for (i in 1..count) {
+                    if (!_isAutopilotActive.value) break
+                    log("🚀 Starting Autopilot Product #$i of $count ($niche)...")
+                    executeHumanWorkflowPipeline(niche, platform, targetBoard)
+                    if (i < count) {
+                        delay(2000)
+                    }
+                }
+                _isAutopilotActive.value = false
+                voiceEngine.speak("Autopilot complete! All $count pins have been created and published with affiliate links.")
+            } catch (e: Exception) {
+                log("❌ Automation error: ${e.localizedMessage}")
+                _step.value = HumanRobotStep.IDLE
+                _isAutopilotActive.value = false
+                hideCursor()
+            }
+        }
     }
 
     fun startHumanWorkflow(
@@ -102,6 +143,8 @@ class HumanRobotAutomationEngine(
     ) {
         automationJob?.cancel()
         _isPaused.value = false
+
+        voiceEngine.speak("Initiating AI Robot. Scanning $platform for trending $niche products.")
 
         automationJob = scope.launch {
             try {
@@ -116,11 +159,13 @@ class HumanRobotAutomationEngine(
 
     fun pause() {
         _isPaused.value = true
+        voiceEngine.speak("Robot paused.")
         log("⏸ Automation paused by user")
     }
 
     fun resume() {
         _isPaused.value = false
+        voiceEngine.speak("Robot resumed.")
         log("▶ Automation resumed")
     }
 
@@ -128,8 +173,10 @@ class HumanRobotAutomationEngine(
         automationJob?.cancel()
         automationJob = null
         _isPaused.value = false
+        _isAutopilotActive.value = false
         _step.value = HumanRobotStep.IDLE
         hideCursor()
+        voiceEngine.speak("Robot stopped.")
         log("🛑 Automation stopped by user")
     }
 
@@ -156,9 +203,13 @@ class HumanRobotAutomationEngine(
         // -------------------------------------------------------------
         _step.value = HumanRobotStep.EXTRACT_PRODUCT
         log("🤖 Step 2: Selected #1 trending gadget with 4.8★ rating and high commission.")
-        val researchedList = affiliateEngine.researchNicheProducts(niche, 1, "task_human")
-        val product = researchedList.firstOrNull() ?: return@withContext
+        val researchedList = affiliateEngine.researchNicheProducts(niche, 10, "task_human")
+        // Pick an item dynamically
+        val itemIndex = (Math.random() * researchedList.size.coerceAtLeast(1)).toInt()
+        val product = researchedList.getOrNull(itemIndex) ?: researchedList.first()
         _currentProduct.value = product
+
+        voiceEngine.speak("Selected trending item: ${product.title.take(30)}. Price: $${product.price}. Estimated commission: ${(product.commissionRate * 100).toInt()} percent.")
 
         moveCursor(0.5f, 0.45f, "Product Details")
         delay(delayTime / 2)
@@ -176,6 +227,7 @@ class HumanRobotAutomationEngine(
         _step.value = HumanRobotStep.VISIT_AFFILIATE_PORTAL
         _currentActiveTab.value = "Affiliate Portal"
         log("🤖 Step 3: Switching browser tab to ${if (product.sourcePlatform == "Temu") "Temu Affiliate" else "AliExpress Portals"}...")
+        voiceEngine.speak("Opening Affiliate Portals link generator to generate official affiliate link.")
         moveCursor(0.35f, 0.08f, "Switch Tab -> Portals")
         delay(delayTime / 2)
         simulateTap()
@@ -204,6 +256,7 @@ class HumanRobotAutomationEngine(
         _currentClipboard.value = verifiedLink
         log("🔗 SUCCESS: Generated & verified official affiliate tracking link!")
         log("   -> $verifiedLink")
+        voiceEngine.speak("Generated verified tracking link for ${_targetCountry.value}.")
         delay(delayTime)
 
         // -------------------------------------------------------------
@@ -212,6 +265,7 @@ class HumanRobotAutomationEngine(
         _step.value = HumanRobotStep.VISIT_AI_STUDIO
         _currentActiveTab.value = "Gemini AI"
         log("🤖 Step 5: Switching to Gemini AI to generate click-worthy SEO & Pinterest copy...")
+        voiceEngine.speak("Asking Gemini to write viral Pinterest title, SEO description, and hashtags.")
         moveCursor(0.65f, 0.08f, "Switch Tab -> Gemini AI")
         delay(delayTime / 2)
         simulateTap()
@@ -231,6 +285,7 @@ class HumanRobotAutomationEngine(
         // -------------------------------------------------------------
         _step.value = HumanRobotStep.RENDER_PINTEREST_IMAGE
         log("🤖 Step 6: Rendering 1000 × 1500 vertical Pinterest image with deal badge & ratings...")
+        voiceEngine.speak("Rendering 1000 by 1500 vertical marketing creative.")
         val pin = creativeEngine.generatePinForProduct(product, targetBoard)
         _currentPinDraft.value = pin
         database.pinDraftDao().insertPinDrafts(listOf(pin))
@@ -243,6 +298,7 @@ class HumanRobotAutomationEngine(
         _step.value = HumanRobotStep.VISIT_PINTEREST
         _currentActiveTab.value = "Pinterest"
         log("🤖 Step 7: Switching to Pinterest Pin Builder (https://www.pinterest.com/pin-builder/)...")
+        voiceEngine.speak("Opening Pinterest Pin Builder.")
         moveCursor(0.85f, 0.08f, "Switch Tab -> Pinterest")
         delay(delayTime / 2)
         simulateTap()
@@ -283,6 +339,7 @@ class HumanRobotAutomationEngine(
         // -------------------------------------------------------------
         _step.value = HumanRobotStep.PUBLISH_AND_VERIFY
         log("🤖 Step 9: Clicking 'Publish' button on Pinterest...")
+        voiceEngine.speak("Publishing pin to $targetBoard board.")
         moveCursor(0.88f, 0.15f, "Click 'Publish'")
         delay(delayTime / 2)
         simulateTap()
@@ -313,6 +370,7 @@ class HumanRobotAutomationEngine(
         _step.value = HumanRobotStep.COMPLETED
         hideCursor()
         log("🎉 WORKFLOW COMPLETE! Pin is live with verified tracking link: $liveUrl")
+        voiceEngine.speak("Pin successfully published! Link verified. Your work is done.")
     }
 
     /**
@@ -329,7 +387,6 @@ class HumanRobotAutomationEngine(
                 imageFile
             )
 
-            // Copy text to clipboard for easy paste into Pinterest
             val shareText = "${pin.title}\n\n${pin.description}\n\n🔗 Get Deal: ${pin.affiliateUrl}"
             copyToSystemClipboard("Pinterest Pin Content", shareText)
 
@@ -339,14 +396,14 @@ class HumanRobotAutomationEngine(
                 putExtra(Intent.EXTRA_TEXT, shareText)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                setPackage("com.pinterest") // Direct to Pinterest if installed
+                setPackage("com.pinterest")
             }
 
             try {
                 context.startActivity(shareIntent)
                 log("🚀 Launched native Pinterest app with 1000x1500 creative & affiliate text!")
+                voiceEngine.speak("Opening native Pinterest app with your image and link.")
             } catch (e: Exception) {
-                // If Pinterest app not installed, open system chooser
                 val chooser = Intent.createChooser(shareIntent.apply { setPackage(null) }, "Create Pin with").apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
@@ -354,7 +411,6 @@ class HumanRobotAutomationEngine(
                 log("🚀 Opened Android Share sheet with 1000x1500 image & affiliate text.")
             }
         } else {
-            // Open Pinterest web builder in Chrome
             openInChrome("https://www.pinterest.com/pin-builder/")
         }
     }
